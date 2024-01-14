@@ -12,6 +12,6 @@ class Region extends Model
     protected $fillable = ['id_reg', 'description', 'status'];
 
     public function commune(){
-        return $this->hasOne('App\Models\Commune');
+        return $this->hasOne('App\Models\Commune', 'id_reg', 'id_reg');
     }
 }

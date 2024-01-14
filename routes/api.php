@@ -22,8 +22,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
  
-
-Route::get('customers/{id}', 'App\Http\Controllers\CustomerController@show');
+Route::get('/customers', 'App\Http\Controllers\CustomerController@index');
+Route::get('customers/{dni}', 'App\Http\Controllers\CustomerController@show');
 Route::post('customers', 'App\Http\Controllers\CustomerController@store');
 Route::put('customers/{id}', 'App\Http\Controllers\CustomerController@update');
 Route::delete('customers/{dni}', 'App\Http\Controllers\CustomerController@delete');
@@ -41,7 +41,6 @@ Route::controller(AuthController::class)->group(function () {
 
 Route::group(['middleware' => ['auth:api']], function(){
 
-    //Route::post('getList','SomeController@someAction')->name('logout'); 
-    Route::get('/customers', 'App\Http\Controllers\CustomerController@index');
+    
 
 });

@@ -18,10 +18,10 @@ class Customer extends Model
         'address', 'date_reg', 'status'];
 
     public function commune(){
-        return $this->belongsTo('App\Models\Commune');
+        return $this->belongsTo('App\Models\Commune', 'id_com', 'id_com');
     }
 
     public function region(){
-        return $this->belongsTo('App\Models\Region');
+        return $this->belongsTo('App\Models\Region', 'id_reg', 'id_reg');
     }
 }
