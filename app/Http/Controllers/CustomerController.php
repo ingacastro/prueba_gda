@@ -7,13 +7,14 @@ use App\Models\Customer;
 use DateTime;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-
+use Illuminate\Support\Facades\Auth;
 
 class CustomerController extends Controller
 {
     //
     public function index()
     {
+        Log::warning('User is accessing all the Customers', ['user' => Auth::user()->id]);
         $customer_show = [];
         $customers = Customer::where('status', 'A')->with(['commune.region' => function($query){
             $query->select('id_reg','description');
@@ -47,11 +48,11 @@ class CustomerController extends Controller
  
     public function show($dni)
     {
+
+        Log::info('User is accessing a single customer', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
         $customer = Customer::where('dni', $dni)
-            //->with('commune')
             ->where('status', 'A')
             ->select('id_com', 'name', 'last_name', 'address')
-            //->with('region')
             ->with(['commune.region' => function($query){
                 $query->select('id_reg','description');
             }])
@@ -84,7 +85,7 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        
+        Log::warning('User is trying to create a single customer', ['user' => Auth::user()->id, 'data' => $request->except('password')]);
         $validator = Validator::make($request->all(),[
             'dni' => 'required|numeric',
             'id_reg' => 'required|numeric',
@@ -123,32 +124,27 @@ class CustomerController extends Controller
             $date_reg = \Carbon\Carbon::now();
             $customer->date_reg = $date_reg;
 
-            $customer->save();
-
-            Log::info('inicio');
-            Log::info('insertar');
-            Log::info($customer);
-            Log::info('ip: '.$request->ip());
-            Log::info('fin');
+            if ($customer->save()) {
+                Log::info('User create a single customer successfully', [
+                    'user' => Auth::user()->id,
+                    'customer' => $customer,
+                    'ip' => $request->ip()
+                ]);
+            }
         
         } catch (\Exception $e) {
             $errors = [
                 'message' => $e->getMessage(),
                 'line' => __LINE__.' '.$e->getLine(),
                 'file' => __FILE__.' '.$e->getFile(),
-                'clientIpAddress' => $request->ip(),
-                '\Request::ip()' => \Request::ip(),
-                '\request()->ip()' =>  \request()->ip(),
-                'clientIpAddress' =>  request()->getClientIp(),
+                'clientIpAddress' => $request->ip()
             ]; 
 
-
-            Log::info('inicio');
-            Log::info('error en insertar');
-            Log::debug($errors);
-            Log::info($errors);
-            Log::info('fin');
-
+            Log::warning('Todo could not be created caused by invalid customer data', [
+                'user' => Auth::user()->id,
+                'data' => $request->except('password'),
+                'errors' => $errors
+            ]);
             return $errors;
          
         }
@@ -171,23 +167,23 @@ class CustomerController extends Controller
 
     public function delete($dni)
     {
+        Log::warning('User is trying to delete a single customer', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
         $customer = Customer::where('dni', $dni)->whereIn('status', ['A', 'I']);
         
         if($customer->count() > 0){
+            Log::info('User deleted a single customer successfully', ['user' => Auth::user()->id, 'todo' => $id]);
             $customer->update(['status' => '3']);
             return response()->json([
                 'response' => 'OK',
                 'code' => 200
             ], 200);
         } else {
+            Log::error('Customer not found by user for deleting', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
             return response()->json([
                 'response' => 'OK',
                 'code' => 404,
                 'message' => 'Registro No Existe'
             ], 404);
         }
-        
-
-        //return response()->json(null, 204);
     }
 }
