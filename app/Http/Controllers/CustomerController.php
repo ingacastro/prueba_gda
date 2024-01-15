@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Customer;
+use App\Models\{Customer, Region, Commune};
 use DateTime;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 
 class CustomerController extends Controller
 {
@@ -80,7 +81,6 @@ class CustomerController extends Controller
             'data' => $customer_result
         ], 200);
 
-        //return $customer;
     }
 
     public function store(Request $request)
@@ -105,12 +105,22 @@ class CustomerController extends Controller
             return $validator->errors();
         }
         
+        $commune = $this->searchIdCom($request->id_com);
+        $region = $this->searchIdReg($request->id_reg);
+
+        if(!$commune){
+            Log::warning('Customer could not be created caused by invalid customer data', ['commune' => $request->id_com]);
+            return 'Commune no existe';
+        }
+
+        if(!$region){
+            Log::warning('Customer could not be created caused by invalid customer data', ['region' => $request->id_reg]);
+            return 'Region no existe';
+        }
 
         try {
 
             $customer = new Customer; 
-
-            // Recibo todos los datos del formulario de la vista 'crear.blade.php'
             $customer->dni = $request->dni;
             $customer->id_reg = $request->id_reg;
             $customer->id_com = $request->id_com;
@@ -140,7 +150,7 @@ class CustomerController extends Controller
                 'clientIpAddress' => $request->ip()
             ]; 
 
-            Log::warning('Todo could not be created caused by invalid customer data', [
+            Log::warning('Customer could not be created caused by invalid customer data', [
                 'user' => Auth::user()->id,
                 'data' => $request->except('password'),
                 'errors' => $errors
@@ -171,7 +181,7 @@ class CustomerController extends Controller
         $customer = Customer::where('dni', $dni)->whereIn('status', ['A', 'I']);
         
         if($customer->count() > 0){
-            Log::info('User deleted a single customer successfully', ['user' => Auth::user()->id, 'todo' => $id]);
+            Log::info('User deleted a single customer successfully', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
             $customer->update(['status' => '3']);
             return response()->json([
                 'response' => 'OK',
@@ -185,5 +195,13 @@ class CustomerController extends Controller
                 'message' => 'Registro No Existe'
             ], 404);
         }
+    }
+
+    public function searchIdReg($id_reg){
+        return Region::where('id_reg', $id_reg)->first();
+    }
+
+    public function searchIdCom($id_com){
+        return Commune::where('id_com', $id_com)->first();
     }
 }
