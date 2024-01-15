@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+
+use App\Support\Exceptions\OAuthException;
+use Illuminate\Http\JsonResponse;
 
 class AuthController extends Controller
 {
@@ -21,9 +25,13 @@ class AuthController extends Controller
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
-        $credentials = $request->only('email', 'password');
-        $token = Auth::attempt($credentials);
+
+        $date_session = \Carbon\Carbon::now();
         
+        $credentials = $request->only('email', 'password');
+            
+        $token = Auth::attempt($credentials);
+    
         if (!$token) {
             return response()->json([
                 'message' => 'Unauthorized',
@@ -31,6 +39,9 @@ class AuthController extends Controller
         }
 
         $user = Auth::user();
+        
+        User::where('email', $request->input('email'))->update(['remember_token' => "$token"]);;
+        
         return response()->json([
             'user' => $user,
             'authorization' => [

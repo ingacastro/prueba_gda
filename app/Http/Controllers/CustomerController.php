@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Customer;
 use DateTime;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
 
 
 class CustomerController extends Controller
@@ -29,8 +31,13 @@ class CustomerController extends Controller
             $customer_show[] = $customer_result;
         }
 
-        return $customer_show;
+        //return $customer_show;
         
+        Log::info('inicio');
+        Log::info('consulta');
+        Log::info('ip: '. \Request::ip());
+        Log::info('fin');
+
         return response()->json([
             'response' => 'OK',
             'code' => 200,
@@ -50,23 +57,55 @@ class CustomerController extends Controller
             }])
             ->first();
 
-        return $customer;
+        //return $customer;
+        if($customer){
+            $customer_result = [];
+            $customer_result['name'] = $customer->name; 
+            $customer_result['last_name'] = $customer->last_name; 
+            $customer_result['address'] = $customer->address ? $customer->address : null; 
+            $customer_result['commune'] = $customer->commune->description;
+            $customer_result['region'] = $customer->commune->region->description;
+        } else {
+            return response()->json([
+                'response' => 'OK',
+                'code' => 404,
+                'message' => 'Registro No Existe'
+            ], 404);
+        }
+        
         return response()->json([
             'response' => 'OK',
             'code' => 200,
-            'data' => $customer
+            'data' => $customer_result
         ], 200);
 
-        return $customer;
+        //return $customer;
     }
 
     public function store(Request $request)
     {
+        
+        $validator = Validator::make($request->all(),[
+            'dni' => 'required|numeric',
+            'id_reg' => 'required|numeric',
+            'id_com' => 'required|numeric',
+            'email' => 'required|unique:users|email',
+            'name' => 'required|string',
+            'last_name' => 'required|string',
+            'address' => 'string'
+        ]);
+
+        if ($validator->fails()) {
+            Log::info('inicio');
+            Log::info('Error en insertar');
+            Log::info($validator->errors());
+            Log::info('ip: '.$request->ip());
+            Log::info('fin');
+            return $validator->errors();
+        }
+        
+
         try {
-            //return Customer::create($request->all());
-            //return $request;
-            
-            //$customer = Customer::create($request->all());
 
             $customer = new Customer; 
 
@@ -81,19 +120,37 @@ class CustomerController extends Controller
             $customer->status = $request->status;
 
             // Guardamos la fecha de creación del registro 
-            //$date_reg = (new DateTime)->getTimestamp();
             $date_reg = \Carbon\Carbon::now();
-            //return $date_reg;
             $customer->date_reg = $date_reg;
 
-            // Inserto todos los datos en mi tabla 'customers' 
             $customer->save();
+
+            Log::info('inicio');
+            Log::info('insertar');
+            Log::info($customer);
+            Log::info('ip: '.$request->ip());
+            Log::info('fin');
         
-        } catch (Throwable $e) {
-            return $e; 
-            return report($e);
-     
-            return false;
+        } catch (\Exception $e) {
+            $errors = [
+                'message' => $e->getMessage(),
+                'line' => __LINE__.' '.$e->getLine(),
+                'file' => __FILE__.' '.$e->getFile(),
+                'clientIpAddress' => $request->ip(),
+                '\Request::ip()' => \Request::ip(),
+                '\request()->ip()' =>  \request()->ip(),
+                'clientIpAddress' =>  request()->getClientIp(),
+            ]; 
+
+
+            Log::info('inicio');
+            Log::info('error en insertar');
+            Log::debug($errors);
+            Log::info($errors);
+            Log::info('fin');
+
+            return $errors;
+         
         }
 
         return response()->json([
@@ -120,8 +177,7 @@ class CustomerController extends Controller
             $customer->update(['status' => '3']);
             return response()->json([
                 'response' => 'OK',
-                'code' => 200,
-                //'data' => $customer
+                'code' => 200
             ], 200);
         } else {
             return response()->json([

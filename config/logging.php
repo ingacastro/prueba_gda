@@ -54,7 +54,8 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'name' => 'gda',
+            'channels' => ['single', 'daily', 'slack'],
             'ignore_exceptions' => false,
         ],
 
