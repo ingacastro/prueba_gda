@@ -8,6 +8,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 use App\Support\Exceptions\OAuthException;
 use Illuminate\Http\JsonResponse;
@@ -21,17 +23,26 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(),[
             'email' => 'required|string|email',
             'password' => 'required|string',
         ]);
+
+        if ($validator->fails()) {
+            Log::info('inicio');
+            Log::info('Error en login');
+            Log::info($validator->errors());
+            Log::info('ip: '.$request->ip());
+            Log::info('fin');
+            return $validator->errors();
+        }
 
         $date_session = \Carbon\Carbon::now();
         
         $credentials = $request->only('email', 'password');
             
         $token = Auth::attempt($credentials);
-    
+
         if (!$token) {
             return response()->json([
                 'message' => 'Unauthorized',
@@ -53,12 +64,20 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        
-        $request->validate([
+        $validator = Validator::make($request->all(),[
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:6',
         ]);
+
+        if ($validator->fails()) {
+            Log::info('inicio');
+            Log::info('Error en registrar usuario');
+            Log::info($validator->errors());
+            Log::info('ip: '.$request->ip());
+            Log::info('fin');
+            return $validator->errors();
+        }
         
         $user = User::create([
             'name' => $request->name,

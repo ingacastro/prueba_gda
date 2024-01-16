@@ -41,7 +41,7 @@ class CustomerController extends Controller
         Log::info('fin');
 
         return response()->json([
-            'response' => 'OK',
+            'success' => 'true',
             'code' => 200,
             'data' => $customer_show
         ], 200);
@@ -50,7 +50,24 @@ class CustomerController extends Controller
     public function show($dni)
     {
 
-        Log::info('User is accessing a single customer', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
+        Log::info('User is accessing a single customer', ['user' => Auth::user()->id, 'customer' => $dni]);
+        
+        $validator = Validator::make(['dni' => $dni],[
+            'dni' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            Log::info('inicio');
+            Log::info('Error en consultar');
+            Log::info($validator->errors());
+            Log::info('ip: '. \Request::ip());
+            Log::info('fin');
+            return response()->json([
+                'success' => 'false',
+                'code' => 500,
+                'errors' => $validator->errors()
+            ], 500);
+        }
         $customer = Customer::where('dni', $dni)
             ->where('status', 'A')
             ->select('id_com', 'name', 'last_name', 'address')
@@ -59,7 +76,6 @@ class CustomerController extends Controller
             }])
             ->first();
 
-        //return $customer;
         if($customer){
             $customer_result = [];
             $customer_result['name'] = $customer->name; 
@@ -69,14 +85,14 @@ class CustomerController extends Controller
             $customer_result['region'] = $customer->commune->region->description;
         } else {
             return response()->json([
-                'response' => 'OK',
+                'success' => 'false',
                 'code' => 404,
                 'message' => 'Registro No Existe'
             ], 404);
         }
         
         return response()->json([
-            'response' => 'OK',
+            'success' => 'true',
             'code' => 200,
             'data' => $customer_result
         ], 200);
@@ -102,7 +118,12 @@ class CustomerController extends Controller
             Log::info($validator->errors());
             Log::info('ip: '.$request->ip());
             Log::info('fin');
-            return $validator->errors();
+            
+            return response()->json([
+                'success' => 'false',
+                'code' => 500,
+                'erros' => $validator->errors()
+            ], 500);
         }
         
         $commune = $this->searchIdCom($request->id_com);
@@ -155,17 +176,20 @@ class CustomerController extends Controller
                 'data' => $request->except('password'),
                 'errors' => $errors
             ]);
-            return $errors;
+
+            return response()->json([
+                'success' => 'false',
+                'code' => 500,
+                'errors' => $errors
+            ], 500);
          
         }
 
         return response()->json([
-            'response' => 'OK',
+            'success' => 'true',
             'code' => 201,
             'data' => $customer
         ], 201);
-
-        return response()->json($customer, 201);
     }
 
     public function update(Request $request, Customer $customer)
@@ -177,20 +201,38 @@ class CustomerController extends Controller
 
     public function delete($dni)
     {
-        Log::warning('User is trying to delete a single customer', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
+        Log::warning('User is trying to delete a single customer', ['user' => Auth::user()->id, 'customer' => $dni]);
+        
+        $validator = Validator::make(['dni' => $dni],[
+            'dni' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            Log::info('inicio');
+            Log::info('Error en eliminar');
+            Log::info($validator->errors());
+            Log::info('ip: '. \Request::ip());
+            Log::info('fin');
+            return response()->json([
+                'success' => 'false',
+                'code' => 500,
+                'errors' => $validator->errors()
+            ], 500);
+        }
+
         $customer = Customer::where('dni', $dni)->whereIn('status', ['A', 'I']);
         
         if($customer->count() > 0){
-            Log::info('User deleted a single customer successfully', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
+            Log::info('User deleted a single customer successfully', ['user' => Auth::user()->id, 'customer' => $dni]);
             $customer->update(['status' => '3']);
             return response()->json([
-                'response' => 'OK',
+                'success' => 'true',
                 'code' => 200
             ], 200);
         } else {
-            Log::error('Customer not found by user for deleting', ['user' => Auth::user()->id, 'customer' => $customer->dni]);
+            Log::error('Customer not found by user for deleting', ['user' => Auth::user()->id, 'customer' => $dni]);
             return response()->json([
-                'response' => 'OK',
+                'success' => 'true',
                 'code' => 404,
                 'message' => 'Registro No Existe'
             ], 404);

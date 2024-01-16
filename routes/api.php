@@ -21,14 +21,10 @@ use App\Http\Controllers\API\AuthController;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
- 
-
-Route::get('customers/{dni}', 'App\Http\Controllers\CustomerController@show');
 
 Route::put('customers/{id}', 'App\Http\Controllers\CustomerController@update');
-Route::delete('customers/{dni}', 'App\Http\Controllers\CustomerController@delete');
 
-Route::post('register', 'App\Http\Controllers\Auth\RegisterController@register');
+//Route::post('register', 'App\Http\Controllers\Auth\RegisterController@register');
 
 
 Route::controller(AuthController::class)->group(function () {
@@ -43,5 +39,7 @@ Route::group(['middleware' => ['auth:api']], function(){
 
     Route::get('/customers', 'App\Http\Controllers\CustomerController@index'); 
     Route::post('customers', 'App\Http\Controllers\CustomerController@store');
+    Route::delete('customers/{dni}', 'App\Http\Controllers\CustomerController@delete');
+    Route::get('customers/{dni}', 'App\Http\Controllers\CustomerController@show');
 
 });
