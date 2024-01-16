@@ -41,7 +41,12 @@ class AuthController extends Controller
         
         $credentials = $request->only('email', 'password');
             
-        $token = Auth::attempt($credentials);
+        //$token = Auth::attempt($credentials);
+        
+        $customClaims= ['date_reg' => $date_session];
+        
+        $token = Auth::attempt($credentials, $customClaims);
+        
 
         if (!$token) {
             return response()->json([
